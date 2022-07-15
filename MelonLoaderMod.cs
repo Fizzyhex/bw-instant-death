@@ -18,11 +18,10 @@ namespace InstantDeath
     {
         public static bool instantDeathEnabled = false;
         private static Player_Health playerHealth = null;
+        private static float deathTimeAmount = 2;
 
         public override void OnApplicationStart()
         {
-            MelonLogger.Msg("OnApplicationStart");
-
             MenuCategory i = MenuManager.CreateCategory("Instant Death", UnityEngine.Color.red);
 
             i.CreateBoolElement("Enabled", UnityEngine.Color.white, false, delegate (bool enabled)
@@ -33,8 +32,7 @@ namespace InstantDeath
             i.CreateFunctionElement("Suicide", UnityEngine.Color.red, delegate ()
             {
                 var oldHealthMode = playerHealth.healthMode;
-
-                // Health mode needs to be set to normal, otherwise Death will set the player's health to 0 and not kill them
+                // Health mode needs to be set to normal, otherwise the player may take damage and live.
                 playerHealth.healthMode = Player_Health.HealthMode.Mortal;
                 playerHealth.Death();
                 // Revert health mode back to the old one
@@ -54,14 +52,17 @@ namespace InstantDeath
 
             if (instantDeathEnabled)
             {
-                playerHealth.healthMode = Player_Health.HealthMode.InsantDeath;
-                playerHealth.instaDeathTimeAmount = 0;
+                if (playerHealth.deathTimeAmount != 0) {
+                    deathTimeAmount = playerHealth.deathTimeAmount;
+                };
+
+                playerHealth.healthMode = Player_Health.HealthMode.Mortal;
+                playerHealth.deathTimeAmount = 0;
             }
             else
             {
-                playerHealth.healthMode = Player_Health.HealthMode.Mortal;
                 // Revert to default value
-                playerHealth.instaDeathTimeAmount = 2;
+                playerHealth.deathTimeAmount = deathTimeAmount;
             }
 
             MelonLogger.Msg($"instantDeathEnabled was set to {instantDeathEnabled}!");
