@@ -1,7 +1,7 @@
 ﻿using MelonLoader;
 using UnityEngine;
-using StressLevelZero;
 using ModThatIsNotMod.BoneMenu;
+using System.Threading;
 
 namespace InstantDeath
 {
@@ -23,23 +23,54 @@ namespace InstantDeath
 
         private static bool healthOverridesEnabled = false;
         private static bool healthOverridesWarningUndelivered = false;
-        private static float maxHealthOverride = 10;
-        private static float regenDurationOverride = 10;
 
         private static MenuCategory boneMenuCategory;
         private static MenuCategory healthCategory;
 
-        public static MelonPreferences_Category preferences;
+        private static MelonPreferences_Category preferences;
 
-        public static MelonPreferences_Entry<float> maxHealthPreference;
-        public static MelonPreferences_Entry<float> healthRegenPreference;
+        private static MelonPreferences_Entry<float> maxHealthPreference;
+        private static MelonPreferences_Entry<float> healthRegenPreference;
 
-        public void DisplayHealthOverrideWarning()
+        private void DisplayHealthOverrideWarning()
         {
             if (healthOverridesEnabled != true && healthOverridesWarningUndelivered)
             {
                 healthOverridesWarningUndelivered = false;
                 ModThatIsNotMod.Notifications.SendNotification("Enable the override to use these settings!", 4, Color.red);
+            }
+        }
+
+        public void UpdatePreferences()
+        {
+            preferences.SaveToFile();
+            MelonLogger.Msg($"instantDeathEnabled is set to {instantDeathEnabled}");
+            MelonLogger.Msg($"maxHealthOverride is set to {maxHealthPreference.Value}");
+            MelonLogger.Msg($"totalRegenDuration is set to {playerHealth.totalRegenDuration}");
+        }
+
+        private void UpdateSettings()
+        {
+            if (healthOverridesEnabled)
+            {
+                playerHealth.max_Health = maxHealthPreference.Value;
+                playerHealth.totalRegenDuration = healthRegenPreference.Value;
+            }
+
+            if (instantDeathEnabled)
+            {
+                if (playerHealth.deathTimeAmount != 0)
+                {
+                    deathTimeAmount = playerHealth.deathTimeAmount;
+                };
+
+                playerHealth.healthMode = Player_Health.HealthMode.Mortal;
+                playerHealth.deathTimeAmount = 0;
+            }
+            else
+            {
+                // Revert to default value
+                playerHealth.deathTimeAmount = deathTimeAmount;
             }
         }
 
@@ -50,16 +81,14 @@ namespace InstantDeath
             preferences = MelonPreferences.CreateCategory("InstantDeath", "Instant Death");
             preferences.SetFilePath("UserData/InstantDeathPreferences.cfg");
 
-            maxHealthPreference = preferences.CreateEntry<float>("MaxHealth", maxHealthOverride, "Max Health");
-            healthRegenPreference = preferences.CreateEntry<float>("HealthRegenDuration", regenDurationOverride, "Health Regeneration Duration");
-
-            maxHealthOverride = maxHealthPreference.Value;
-            regenDurationOverride = healthRegenPreference.Value;
+            maxHealthPreference = preferences.CreateEntry<float>("MaxHealth", 10, "Max Health");
+            healthRegenPreference = preferences.CreateEntry<float>("HealthRegenDuration", 10, "Health Regeneration Duration");
 
             boneMenuCategory.CreateBoolElement("Instant Death Enabled", Color.white, false, delegate (bool enabled)
             {
                 instantDeathEnabled = enabled;
                 UpdateSettings();
+                UpdatePreferences();
             });
 
             healthCategory = boneMenuCategory.CreateSubCategory("Health Settings", Color.green);
@@ -69,22 +98,27 @@ namespace InstantDeath
                 healthOverridesEnabled = enabled;
 
                 UpdateSettings();
+                UpdatePreferences();
             });
 
-            healthCategory.CreateFloatElement("Max Health (default: 10)", Color.white, maxHealthOverride, delegate (float maxHealth)
+            healthCategory.CreateFloatElement("Max Health (default: 10)", Color.white, maxHealthPreference.Value, delegate (float maxHealth)
             {
                 DisplayHealthOverrideWarning();
 
-                maxHealthOverride = maxHealth;
+                maxHealthPreference.Value = maxHealth;
+
                 UpdateSettings();
+                UpdatePreferences();
             }, 1, 1, 1000, true);
 
-            healthCategory.CreateFloatElement("Regen Duration (default: 10)", Color.white, maxHealthOverride, delegate (float regenDuration)
+            healthCategory.CreateFloatElement("Regen Duration (default: 10)", Color.white, healthRegenPreference.Value, delegate (float regenDuration)
             {
                 DisplayHealthOverrideWarning();
 
-                regenDurationOverride = regenDuration;
+                healthRegenPreference.Value = regenDuration;
+
                 UpdateSettings();
+                UpdatePreferences();
             }, 1, 0, 1000, true);
 
             boneMenuCategory.CreateFunctionElement("Suicide", Color.red, delegate ()
@@ -102,41 +136,6 @@ namespace InstantDeath
         {
             playerHealth = GameObject.FindObjectOfType<Player_Health>();
             UpdateSettings();
-        }
-
-        public void UpdateSettings()
-        {
-            MelonLogger.Msg($"Max health was {playerHealth.max_Health}");
-            MelonLogger.Msg($"Regen speed was {playerHealth.totalRegenDuration}");
-
-            if (healthOverridesEnabled)
-            {
-                playerHealth.max_Health = maxHealthOverride;
-                playerHealth.totalRegenDuration = regenDurationOverride;
-            }
-
-            if (instantDeathEnabled)
-            {
-                if (playerHealth.deathTimeAmount != 0) {
-                    deathTimeAmount = playerHealth.deathTimeAmount;
-                };
-
-                playerHealth.healthMode = Player_Health.HealthMode.Mortal;
-                playerHealth.deathTimeAmount = 0;
-            }
-            else
-            {
-                // Revert to default value
-                playerHealth.deathTimeAmount = deathTimeAmount;
-            }
-
-            maxHealthPreference.Value = maxHealthOverride;
-            healthRegenPreference.Value = regenDurationOverride;
-            preferences.SaveToFile();
-
-            MelonLogger.Msg($"instantDeathEnabled is set to {instantDeathEnabled}");
-            MelonLogger.Msg($"maxHealthOverride is set to {maxHealthOverride}");
-            MelonLogger.Msg($"totalRegenDuration is set to {playerHealth.totalRegenDuration}");
         }
     }
 }
