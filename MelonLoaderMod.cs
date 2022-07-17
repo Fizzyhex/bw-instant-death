@@ -2,6 +2,9 @@
 using UnityEngine;
 using ModThatIsNotMod.BoneMenu;
 using System.Threading;
+using HarmonyLib;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace InstantDeath
 {
@@ -10,7 +13,7 @@ namespace InstantDeath
         public const string Name = "InstantDeath"; // Name of the Mod.  (MUST BE SET)
         public const string Author = "Virshal"; // Author of the Mod.  (Set as null if none)
         public const string Company = null; // Company that made the Mod.  (Set as null if none)
-        public const string Version = "1.0.3"; // Version of the Mod.  (MUST BE SET)
+        public const string Version = "1.0.4"; // Version of the Mod.  (MUST BE SET)
         public const string DownloadLink = null; // Download Link for the Mod.  (Set as null if none)
     }
 
@@ -74,6 +77,14 @@ namespace InstantDeath
             }
         }
 
+        public static void MaxHealthPostfix(ref float __result)
+        {
+            if (healthOverridesEnabled)
+            {
+                __result = maxHealthPreference.Value;
+            }
+        }
+
         public override void OnApplicationStart()
         {
             boneMenuCategory = MenuManager.CreateCategory("Instant Death", Color.red);
@@ -87,8 +98,8 @@ namespace InstantDeath
             boneMenuCategory.CreateBoolElement("Instant Death Enabled", Color.white, false, delegate (bool enabled)
             {
                 instantDeathEnabled = enabled;
+
                 UpdateSettings();
-                UpdatePreferences();
             });
 
             healthCategory = boneMenuCategory.CreateSubCategory("Health Settings", Color.green);
@@ -98,7 +109,6 @@ namespace InstantDeath
                 healthOverridesEnabled = enabled;
 
                 UpdateSettings();
-                UpdatePreferences();
             });
 
             healthCategory.CreateFloatElement("Max Health (default: 10)", Color.white, maxHealthPreference.Value, delegate (float maxHealth)
@@ -123,6 +133,8 @@ namespace InstantDeath
 
             boneMenuCategory.CreateFunctionElement("Suicide", Color.red, delegate ()
             {
+                UpdateSettings();
+
                 var oldHealthMode = playerHealth.healthMode;
                 // Health mode needs to be set to normal, otherwise the player may take damage and live.
                 playerHealth.healthMode = Player_Health.HealthMode.Mortal;
@@ -132,10 +144,19 @@ namespace InstantDeath
             });
         }
 
-        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+        async void DelayedSettingsUpdate()
+        {
+            await Task.Delay(3000);
+            UpdateSettings();
+        }
+
+        public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             playerHealth = GameObject.FindObjectOfType<Player_Health>();
             UpdateSettings();
+
+            // ew... couldn't find a better solution for the game overwriting max health unfortunately, feel free to yell at me though
+            DelayedSettingsUpdate();
         }
     }
 }
