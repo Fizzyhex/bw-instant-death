@@ -144,20 +144,13 @@ namespace InstantDeath
                 playerHealth.healthMode = oldHealthMode;
             });
         }
-
-        async void DelayedSettingsUpdate()
+        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
-            await Task.Delay(3000);
-            UpdateSettings();
-        }
-
-        public override void OnSceneWasInitialized(int buildIndex, string sceneName)
-        {
+            // Aero: I'm pretty sure you can set the player's health in
+            //  OnSceneWasLoaded instead of OnSceneWasInitialized or whatever.
+            //  However, I don't have the means to compile and test this.
             playerHealth = GameObject.FindObjectOfType<Player_Health>();
             UpdateSettings();
-
-            // ew... couldn't find a better solution for the game overwriting max health unfortunately, feel free to yell at me though
-            DelayedSettingsUpdate();
         }
     }
 }
