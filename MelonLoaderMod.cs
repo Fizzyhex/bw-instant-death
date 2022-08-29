@@ -8,149 +8,146 @@ using System.Threading.Tasks;
 
 namespace InstantDeath
 {
-    public static class BuildInfo
-    {
-        public const string Name = "InstantDeath"; // Name of the Mod.  (MUST BE SET)
-        public const string Author = "Virshal"; // Author of the Mod.  (Set as null if none)
-        public const string Company = null; // Company that made the Mod.  (Set as null if none)
-        public const string Version = "1.0.5"; // Version of the Mod.  (MUST BE SET)
-        public const string DownloadLink = null; // Download Link for the Mod.  (Set as null if none)
-    }
+	public static class BuildInfo
+	{
+		public const string Name = "InstantDeath"; // Name of the Mod.  (MUST BE SET)
+		public const string Author = "Fizzy"; // Author of the Mod.  (Set as null if none)
+		public const string Company = null; // Company that made the Mod.  (Set as null if none)
+		public const string Version = "1.0.6"; // Version of the Mod.  (MUST BE SET)
+		public const string DownloadLink = null; // Download Link for the Mod.  (Set as null if none)
+	}
 
-    public class InstantDeath : MelonMod
-    {
-        private static Player_Health playerHealth;
+	public class InstantDeath : MelonMod
+	{
+		private static Player_Health playerHealth;
 
-        private static bool instantDeathEnabled = false;
-        private static float deathTimeAmount = 2;
+		private static bool instantDeathEnabled = false;
+		private static float deathTimeAmount = 2;
 
-        private static bool healthOverridesEnabled = false;
-        private static bool healthOverridesWarningUndelivered = false;
+		private static bool healthOverridesEnabled = false;
+		private static bool healthOverridesWarningUndelivered = false;
 
-        private static MenuCategory boneMenuCategory;
-        private static MenuCategory healthCategory;
+		private static MenuCategory boneMenuCategory;
+		private static MenuCategory healthCategory;
 
-        private static MelonPreferences_Category preferences;
+		private static MelonPreferences_Category preferences;
 
-        private static MelonPreferences_Entry<float> maxHealthPreference;
-        private static MelonPreferences_Entry<float> healthRegenPreference;
+		private static MelonPreferences_Entry<float> maxHealthPreference;
+		private static MelonPreferences_Entry<float> healthRegenPreference;
 
-        private void DisplayHealthOverrideWarning()
-        {
-            if (healthOverridesEnabled != true && healthOverridesWarningUndelivered)
-            {
-                healthOverridesWarningUndelivered = false;
-                ModThatIsNotMod.Notifications.SendNotification("Enable the override to use these settings!", 4, Color.red);
-            }
-        }
+		private void DisplayHealthOverrideWarning()
+		{
+			if (healthOverridesEnabled != true && healthOverridesWarningUndelivered)
+			{
+				healthOverridesWarningUndelivered = false;
+				ModThatIsNotMod.Notifications.SendNotification("Enable the override to use these settings!", 4, Color.red);
+			}
+		}
 
-        public void UpdatePreferences()
-        {
-            preferences.SaveToFile();
-            MelonLogger.Msg($"instantDeathEnabled is set to {instantDeathEnabled}");
-            MelonLogger.Msg($"maxHealthOverride is set to {maxHealthPreference.Value}");
-            MelonLogger.Msg($"totalRegenDuration is set to {playerHealth.totalRegenDuration}");
-        }
+		public void UpdatePreferences()
+		{
+			preferences.SaveToFile();
+			MelonLogger.Msg($"instantDeathEnabled is set to {instantDeathEnabled}");
+			MelonLogger.Msg($"maxHealthOverride is set to {maxHealthPreference.Value}");
+			MelonLogger.Msg($"totalRegenDuration is set to {playerHealth.totalRegenDuration}");
+		}
 
-        private void UpdateSettings()
-        {
-            if (healthOverridesEnabled)
-            {
-                playerHealth.max_Health = maxHealthPreference.Value;
-                playerHealth.totalRegenDuration = healthRegenPreference.Value;
-                playerHealth.SetFullHealth();
-            }
+		private void UpdateSettings()
+		{
+			if (healthOverridesEnabled)
+			{
+				playerHealth.max_Health = maxHealthPreference.Value;
+				playerHealth.totalRegenDuration = healthRegenPreference.Value;
+				playerHealth.SetFullHealth();
+			}
 
-            if (instantDeathEnabled)
-            {
-                if (playerHealth.deathTimeAmount != 0)
-                {
-                    deathTimeAmount = playerHealth.deathTimeAmount;
-                };
+			if (instantDeathEnabled)
+			{
+				if (playerHealth.deathTimeAmount != 0)
+				{
+					deathTimeAmount = playerHealth.deathTimeAmount;
+				};
 
-                playerHealth.healthMode = Player_Health.HealthMode.Mortal;
-                playerHealth.deathTimeAmount = 0;
-            }
-            else
-            {
-                // Revert to default value
-                playerHealth.deathTimeAmount = deathTimeAmount;
-            }
-        }
+				playerHealth.healthMode = Player_Health.HealthMode.Mortal;
+				playerHealth.deathTimeAmount = 0;
+			}
+			else
+			{
+				// Revert to default value
+				playerHealth.deathTimeAmount = deathTimeAmount;
+			}
+		}
 
-        public static void MaxHealthPostfix(ref float __result)
-        {
-            if (healthOverridesEnabled)
-            {
-                __result = maxHealthPreference.Value;
-            }
-        }
+		public static void MaxHealthPostfix(ref float __result)
+		{
+			if (healthOverridesEnabled)
+			{
+				__result = maxHealthPreference.Value;
+			}
+		}
 
-        public override void OnApplicationStart()
-        {
-            boneMenuCategory = MenuManager.CreateCategory("Instant Death", Color.red);
+		public override void OnApplicationStart()
+		{
+			boneMenuCategory = MenuManager.CreateCategory("Instant Death", Color.red);
 
-            preferences = MelonPreferences.CreateCategory("InstantDeath", "Instant Death");
-            preferences.SetFilePath("UserData/InstantDeathPreferences.cfg");
+			preferences = MelonPreferences.CreateCategory("InstantDeath", "Instant Death");
+			preferences.SetFilePath("UserData/InstantDeathPreferences.cfg");
 
-            maxHealthPreference = preferences.CreateEntry<float>("MaxHealth", 10, "Max Health");
-            healthRegenPreference = preferences.CreateEntry<float>("HealthRegenDuration", 10, "Health Regeneration Duration");
+			maxHealthPreference = preferences.CreateEntry<float>("MaxHealth", 10, "Max Health");
+			healthRegenPreference = preferences.CreateEntry<float>("HealthRegenDuration", 10, "Health Regeneration Duration");
 
-            boneMenuCategory.CreateBoolElement("Instant Death Enabled", Color.white, false, delegate (bool enabled)
-            {
-                instantDeathEnabled = enabled;
+			boneMenuCategory.CreateBoolElement("Instant Death Enabled", Color.white, false, delegate (bool enabled)
+			{
+				instantDeathEnabled = enabled;
 
-                UpdateSettings();
-            });
+				UpdateSettings();
+			});
 
-            healthCategory = boneMenuCategory.CreateSubCategory("Health Settings", Color.green);
+			healthCategory = boneMenuCategory.CreateSubCategory("Health Settings", Color.green);
 
-            healthCategory.CreateBoolElement("Enable health settings", Color.green, healthOverridesEnabled, delegate (bool enabled)
-            {
-                healthOverridesEnabled = enabled;
+			healthCategory.CreateBoolElement("Enable health settings", Color.green, healthOverridesEnabled, delegate (bool enabled)
+			{
+				healthOverridesEnabled = enabled;
 
-                UpdateSettings();
-            });
+				UpdateSettings();
+			});
 
-            healthCategory.CreateFloatElement("Max Health (default: 10)", Color.white, maxHealthPreference.Value, delegate (float maxHealth)
-            {
-                DisplayHealthOverrideWarning();
+			healthCategory.CreateFloatElement("Max Health (default: 10)", Color.white, maxHealthPreference.Value, delegate (float maxHealth)
+			{
+				DisplayHealthOverrideWarning();
 
-                maxHealthPreference.Value = maxHealth;
+				maxHealthPreference.Value = maxHealth;
 
-                UpdateSettings();
-                UpdatePreferences();
-            }, 1, 1, 1000, true);
+				UpdateSettings();
+				UpdatePreferences();
+			}, 1, 1, 1000, true);
 
-            healthCategory.CreateFloatElement("Regen Duration (default: 10)", Color.white, healthRegenPreference.Value, delegate (float regenDuration)
-            {
-                DisplayHealthOverrideWarning();
+			healthCategory.CreateFloatElement("Regen Duration (default: 10)", Color.white, healthRegenPreference.Value, delegate (float regenDuration)
+			{
+				DisplayHealthOverrideWarning();
 
-                healthRegenPreference.Value = regenDuration;
+				healthRegenPreference.Value = regenDuration;
 
-                UpdateSettings();
-                UpdatePreferences();
-            }, 1, 0, 1000, true);
+				UpdateSettings();
+				UpdatePreferences();
+			}, 1, 0, 1000, true);
 
-            boneMenuCategory.CreateFunctionElement("Suicide", Color.red, delegate ()
-            {
-                UpdateSettings();
+			boneMenuCategory.CreateFunctionElement("Suicide", Color.red, delegate ()
+			{
+				UpdateSettings();
 
-                var oldHealthMode = playerHealth.healthMode;
-                // Health mode needs to be set to normal, otherwise the player may take damage and live.
-                playerHealth.healthMode = Player_Health.HealthMode.Mortal;
-                playerHealth.Death();
-                // Revert health mode back to the old one
-                playerHealth.healthMode = oldHealthMode;
-            });
-        }
-        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
-        {
-            // Aero: I'm pretty sure you can set the player's health in
-            //  OnSceneWasLoaded instead of OnSceneWasInitialized or whatever.
-            //  However, I don't have the means to compile and test this.
-            playerHealth = GameObject.FindObjectOfType<Player_Health>();
-            UpdateSettings();
-        }
-    }
+				var oldHealthMode = playerHealth.healthMode;
+				// Health mode needs to be set to normal, otherwise the player may take damage and live.
+				playerHealth.healthMode = Player_Health.HealthMode.Mortal;
+				playerHealth.Death();
+				// Revert health mode back to the old one
+				playerHealth.healthMode = oldHealthMode;
+			});
+		}
+		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+		{
+			playerHealth = GameObject.FindObjectOfType<Player_Health>();
+			UpdateSettings();
+		}
+	}
 }
